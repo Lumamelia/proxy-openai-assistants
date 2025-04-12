@@ -15,18 +15,7 @@ export default async function handler(request, response) {
   const apiKey = process.env.OPENAI_API_KEY;
 
   try {
-    const threadRes = await fetch("https://api.openai.com/v1/threads", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-        "OpenAI-Beta": "assistants=v2"
-      }
-    });
-    const threadData = await threadRes.json();
-    const threadId = threadData.id;
-
-    await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+    const runRes = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/threads/runs`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -34,30 +23,27 @@ export default async function handler(request, response) {
         "OpenAI-Beta": "assistants=v2"
       },
       body: JSON.stringify({
-        role: "user",
-        content: userInput
+        thread: {
+          messages: [{ role: "user", content: userInput }]
+        }
       })
     });
 
-    const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-        "OpenAI-Beta": "assistants=v2"
-      },
-      body: JSON.stringify({
-        assistant_id: assistantId
-      })
-    });
     const runData = await runRes.json();
-    const runId = runData.id;
 
-    let status = "queued";
+    if (runRes.status !== 200) {
+      console.error(runData);
+      return response.status(500).json({ error: "Erro ao criar execução" });
+    }
+
+    let status = runData.status;
+    let runId = runData.id;
+    let threadId = runData.thread_id;
     let attempts = 0;
+
     while (status !== "completed" && attempts < 10) {
       await new Promise(resolve => setTimeout(resolve, 2000));
-      const statusCheck = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
+      const checkRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -65,8 +51,8 @@ export default async function handler(request, response) {
           "OpenAI-Beta": "assistants=v2"
         }
       });
-      const runStatus = await statusCheck.json();
-      status = runStatus.status;
+      const checkData = await checkRes.json();
+      status = checkData.status;
       attempts++;
     }
 
@@ -74,7 +60,7 @@ export default async function handler(request, response) {
       return response.status(500).json({ error: "Execução não foi concluída" });
     }
 
-    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+    const messagesRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -82,8 +68,7 @@ export default async function handler(request, response) {
         "OpenAI-Beta": "assistants=v2"
       }
     });
-
-    const messagesData = await messagesResponse.json();
+    const messagesData = await messagesRes.json();
     const assistantMessage = messagesData.data.find(msg => msg.role === "assistant");
 
     return response.status(200).json({ message: assistantMessage.content[0].text.value });
@@ -93,3 +78,4 @@ export default async function handler(request, response) {
     return response.status(500).json({ error: "Erro inesperado" });
   }
 }
+
