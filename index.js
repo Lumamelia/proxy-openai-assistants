@@ -1,6 +1,6 @@
 export default async function handler(request, response) {
   response.setHeader("Access-Control-Allow-Origin", "*");
-  response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, OpenAI-Beta");
 
   if (request.method === "OPTIONS") {
@@ -19,7 +19,6 @@ export default async function handler(request, response) {
   }
 
   try {
-    // Criar um novo thread
     const threadRes = await fetch("https://api.openai.com/v1/threads", {
       method: "POST",
       headers: {
@@ -31,7 +30,6 @@ export default async function handler(request, response) {
     const threadData = await threadRes.json();
     const threadId = threadData.id;
 
-    // Adicionar mensagem do usuário ao thread
     await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: "POST",
       headers: {
@@ -45,7 +43,6 @@ export default async function handler(request, response) {
       })
     });
 
-    // Rodar o assistente no thread
     const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
       method: "POST",
       headers: {
@@ -60,13 +57,10 @@ export default async function handler(request, response) {
     const runData = await runRes.json();
     const runId = runData.id;
 
-    // Aguardar a conclusão do run
     let status = "queued";
     let attempts = 0;
-
     while (status !== "completed" && attempts < 10) {
       await new Promise(resolve => setTimeout(resolve, 2000));
-
       const statusCheck = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
         method: "GET",
         headers: {
@@ -83,7 +77,6 @@ export default async function handler(request, response) {
       return response.status(500).json({ error: "Execução não foi concluída" });
     }
 
-    // Buscar as mensagens do thread
     const messagesRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: "GET",
       headers: {
@@ -92,7 +85,6 @@ export default async function handler(request, response) {
       }
     });
     const messagesData = await messagesRes.json();
-
     const assistantMessage = messagesData.data.find(msg => msg.role === "assistant");
 
     if (!assistantMessage) {
@@ -103,8 +95,7 @@ export default async function handler(request, response) {
 
   } catch (error) {
     console.error(error);
-    return response.status(500).json({ error: "Erro inesperado no servidor" });
-  }
-}
+    return response.status(500).
+
 
 
