@@ -95,7 +95,10 @@ export default async function handler(request, response) {
 
   } catch (error) {
     console.error(error);
-    return response.status(500).
+    return response.status(500).json({ error: "Erro inesperado no servidor" });
+  }
+}
+
 
 
 
