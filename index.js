@@ -1,5 +1,6 @@
 export default async function handler(request, response) {
-  response.setHeader("Access-Control-Allow-Origin", "*");
+  // LIBERA CORS APENAS PARA SEU DOMÍNIO
+  response.setHeader("Access-Control-Allow-Origin", "https://metajuri.site");
   response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, OpenAI-Beta");
 
@@ -82,23 +83,8 @@ export default async function handler(request, response) {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "OpenAI-Beta": "assistants=v2"
-      }
-    });
-    const messagesData = await messagesRes.json();
-    const assistantMessage = messagesData.data.find(msg => msg.role === "assistant");
+        "OpenAI-B
 
-    if (!assistantMessage) {
-      return response.status(500).json({ error: "Nenhuma resposta do assistente" });
-    }
-
-    return response.status(200).json({ message: assistantMessage.content[0].text.value });
-
-  } catch (error) {
-    console.error(error);
-    return response.status(500).json({ error: "Erro inesperado no servidor" });
-  }
-}
 
 
 
