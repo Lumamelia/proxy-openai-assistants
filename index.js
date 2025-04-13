@@ -4,7 +4,8 @@ export default async function handler(request, response) {
   response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, OpenAI-Beta");
 
   if (request.method === "OPTIONS") {
-    return response.status(200).end();
+    response.status(200).end();
+    return;
   }
 
   if (request.method !== "POST") {
@@ -98,6 +99,7 @@ export default async function handler(request, response) {
     return response.status(500).json({ error: "Erro inesperado no servidor" });
   }
 }
+
 
 
 
